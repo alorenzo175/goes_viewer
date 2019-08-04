@@ -6,10 +6,7 @@ import pyresample
 import xarray as xr
 
 
-CONTRAST = 105
-G17_CORNERS = np.array(((-116, 38), (-102, 30)))
-G16_CORNERS = np.array(((-116, 30), (-102, 38)))
-web_mercator = CRS.from_epsg("3857")
+from goes_viewer.constants import CONTRAST, G16_CORNERS, G17_CORNERS, WEB_MERCATOR, DX, DY
 
 
 def open_file(path, corners):
@@ -103,21 +100,23 @@ def make_resample_params(ds, corners):
             ds.y.max().item(),
         ),
     )
-    pts = transform(ds.crs.geodetic_crs, web_mercator, corners[:, 0], corners[:, 1])
+    pts = transform(ds.crs.geodetic_crs, WEB_MERCATOR, corners[:, 0], corners[:, 1])
+    width = int((pts[0][1] - pts[0][0]) / DX)
+    height = int((pts[1][1] - pts[1][0]) / DY)
     webm_area = pyresample.AreaDefinition(
         "webm",
         "web  mercator",
         "webm",
-        projection=web_mercator.to_proj4(),
-        width=len(ds.x),
-        height=len(ds.y),
+        projection=WEB_MERCATOR.to_proj4(),
+        width=width,
+        height=height,
         area_extent=(pts[0][0], pts[1][0], pts[0][1], pts[1][1]),
     )
-    return pyresample.bilinear.get_bil_info(goes_area, webm_area, 6e3, neighbours=8)
+    shape = (height, width)
+    return pyresample.bilinear.get_bil_info(goes_area, webm_area, 6e3, neighbours=8), shape
 
 
-def resample_image(resample_params, img_arr):
-    shape = img_arr.shape[:-1]
+def resample_image(resample_params, shape, img_arr):
     out = np.dstack(
         [
             pyresample.bilinear.get_sample_from_bil_info(
@@ -132,19 +131,18 @@ def resample_image(resample_params, img_arr):
 
 def make_img_filename(ds):
     date = dt.datetime.utcfromtimestamp(ds.t.item() / 1e9)
-    return f'{ds.platform_ID}_{date.strftime("%Y%m%dT%H%M%SZ")}.png'
+    return f'figs/{ds.platform_ID}_{date.strftime("%Y%m%dT%H%M%SZ")}.png'
 
 
 if __name__ == "__main__":
     from pathlib import Path
 
     goes_dir = Path("/storage/projects/goes_alg/goes_data/southwest_adj/")
-    goes_files = sorted(list(goes_dir.glob("*L2-MC*.nc")))
-    goes_file = goes_files[-1]
+    goes_files = sorted(list(goes_dir.glob("*L2-MC*.nc")), reverse=True)
+    for goes_file in goes_files[:10]:
+        ds = open_file(goes_file, G16_CORNERS)
+        img = make_geocolor_image(ds)
 
-    ds = open_file(goes_file, G16_CORNERS)
-    img = make_geocolor_image(ds)
-
-    resample_params = make_resample_params(ds, G16_CORNERS)
-    nimg = resample_image(resample_params, img)
-    Image.fromarray(nimg).save(make_img_filename(ds), format="png", optimize=True)
+        resample_params, shape = make_resample_params(ds, G16_CORNERS)
+        nimg = resample_image(resample_params, shape, img)
+        Image.fromarray(nimg).save(make_img_filename(ds), format="png", optimize=True)
