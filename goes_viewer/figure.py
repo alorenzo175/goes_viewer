@@ -13,6 +13,7 @@ from bokeh.models import (
 )
 from bokeh.resources import CDN
 from bokeh.embed import file_html
+from bokeh.io import curdoc, save
 from bokeh.layouts import row, column
 from pyproj import transform
 
@@ -81,7 +82,7 @@ def create_bokeh_figure(
         y_range=y_range,
         title=title,
         toolbar_location="right",
-        sizing_mode="fixed",
+        sizing_mode="scale_width",
         name="map_fig",
         tooltips=[("Site", "@name")],
     )
@@ -91,8 +92,7 @@ def create_bokeh_figure(
         start=0,
         end=100,
         value=0,
-        name="image_slider",
-        id='image_slider',
+        name="timeslider",
         sizing_mode="scale_width",
     )
 
@@ -100,7 +100,7 @@ def create_bokeh_figure(
         labels=["\u25B6", "\u25FC", "\u27F3"],
         active=1,
         name="play_buttons",
-        sizing_mode="fixed",
+        sizing_mode="scale_width",
     )
     fig_source = ColumnDataSource(data=dict(url=[]), name='figsource', id='figsource')
     adapter = CustomJS(
@@ -220,13 +220,19 @@ def create_bokeh_figure(
     map_fig.cross(x="x", y="y", size=12, fill_alpha=0.8, source=pt_source, color="red")
     slider.js_on_change("value", callback)
     play_buttons.js_on_change("active", play_callback)
-
-    box = row(play_buttons, slider)
-    return column(box, map_fig)
+    doc = curdoc()
+    for thing in (map_fig, play_buttons, slider):
+        doc.add_root(thing)
+    doc.title = 'GOES Image Viewer'
+    return doc
 
 
 if __name__ == "__main__":
-    fig = create_bokeh_figure(G16_CORNERS, [-116, -108], [31, 37], "")
-    html = file_html(fig, CDN, "my plot")
-    with open("fig.html", "w") as f:
+    doc = create_bokeh_figure(G16_CORNERS, [-116, -108], [31, 37], "")
+    from jinja2 import Template
+    from jinja2 import Environment, FileSystemLoader
+    env = Environment(loader=FileSystemLoader('goes_viewer/templates'))
+    template = env.get_template('index.html')
+    html = file_html(doc, CDN, 'TITLE', template)
+    with open('fig.html', 'w') as f:
         f.write(html)
