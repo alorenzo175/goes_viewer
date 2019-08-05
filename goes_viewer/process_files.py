@@ -131,7 +131,7 @@ def resample_image(resample_params, shape, img_arr):
 
 def make_img_filename(ds):
     date = dt.datetime.utcfromtimestamp(ds.t.item() / 1e9)
-    return f'figs/{ds.platform_ID}_{date.strftime("%Y%m%dT%H%M%SZ")}.png'
+    return f'figs/{ds.platform_ID}_{date.strftime("%Y-%m-%dT%H:%M:%SZ")}.png'
 
 
 if __name__ == "__main__":

@@ -67,6 +67,7 @@ def create_bokeh_figure(
     base_height=800,
     image_alpha=0.8,
     base_url="http://localhost:3333/figs/",
+    title='GOES GeoColor Imagery at '
 ):
     img_args, x_range, y_range, scale = compute_image_locations_ranges(
         corners, lon_limits, lat_limits
@@ -78,7 +79,7 @@ def create_bokeh_figure(
         y_axis_type="mercator",
         x_range=x_range,
         y_range=y_range,
-        title="GOES GeoColor Imagery",
+        title=title,
         toolbar_location="right",
         sizing_mode="fixed",
         name="map_fig",
@@ -90,31 +91,36 @@ def create_bokeh_figure(
         start=0,
         end=100,
         value=0,
-        name="slider",
+        name="image_slider",
+        id='image_slider',
         sizing_mode="scale_width",
     )
+
     play_buttons = RadioButtonGroup(
         labels=["\u25B6", "\u25FC", "\u27F3"],
         active=1,
         name="play_buttons",
         sizing_mode="fixed",
     )
-    fig_source = ColumnDataSource(data=dict(url=[]))
+    fig_source = ColumnDataSource(data=dict(url=[]), name='figsource', id='figsource')
     adapter = CustomJS(
-        args=dict(slider=slider, fig_source=fig_source, base_url=base_url),
+        args=dict(slider=slider, fig_source=fig_source, base_url=base_url, title=map_fig.title),
         code="""
     const result = {url: []}
     const urls = cb_data.response
-    slider.end = Math.max(urls.length - 1, 1)
-    slider.change.emit()
+    var pnglen = 0;
     for (i=0; i<urls.length; i++) {
         var name = urls[i]['name'];
         if (name.endsWith('.png')) {
             result.url.push(base_url + name)
+            pnglen += 1
         }
     }
+    slider.end = Math.max(pnglen - 1, 1)
+    slider.change.emit()
     if (fig_source.data['url'].length == 0) {
         fig_source.data['url'][0] = result.url[0]
+        fig_source.tags = ['']
         fig_source.change.emit()
     }
     return result
@@ -147,12 +153,25 @@ def create_bokeh_figure(
     pt_source.method = "GET"
 
     callback = CustomJS(
-        args=dict(fig_source=fig_source, url_source=url_source, base_url=base_url),
+        args=dict(fig_source=fig_source, url_source=url_source),
         code="""
-        var inp_url = url_source.data['url'][cb_obj.value];
-        fig_source.data['url'][0] = inp_url;
-        fig_source.change.emit();
+        if (cb_obj.value < url_source.data['url'].length){
+            var inp_url = url_source.data['url'][cb_obj.value];
+            fig_source.data['url'][0] = inp_url;
+            fig_source.tags = [cb_obj.value];
+            fig_source.change.emit();
+        }
         """,
+    )
+
+    title_callback = CustomJS(
+        args=dict(title=map_fig.title, base_title=title),
+        code="""
+        var url = cb_obj.data['url'][0]
+        var date = url.split('/').pop().split('_').pop().split('.')[0]
+        title.text = base_title + date
+        title.change.emit()
+        """
     )
 
     play_callback = CustomJS(
@@ -197,11 +216,13 @@ def create_bokeh_figure(
     map_fig.image_url(
         url="url", global_alpha=image_alpha, source=fig_source, **img_args
     )
-
+    fig_source.js_on_change('tags', title_callback)
     map_fig.cross(x="x", y="y", size=12, fill_alpha=0.8, source=pt_source, color="red")
     slider.js_on_change("value", callback)
     play_buttons.js_on_change("active", play_callback)
-    return row(map_fig, column(play_buttons, slider))
+
+    box = row(play_buttons, slider)
+    return column(box, map_fig)
 
 
 if __name__ == "__main__":
