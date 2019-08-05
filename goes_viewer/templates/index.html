@@ -51,19 +51,20 @@
 </div>
 <div class="container" id="content_main">
   <div class="row">
-    <div class="col-sm-1 col-xs-1"></div>
-    <div class="col-sm-4 col-xs-8">
+    <div class="col-sm-2 col-xs-0"></div>
+    <div class="col-sm-4 col-xs-7">
       {{ embed(docs[0].roots.timeslider) | indent(10) }}
     </div>
     <div class="col-sm-3 col-xs-4">
       {{ embed(docs[0].roots.play_buttons) | indent(10) }}
     </div>
-    <div class="col-sm-1 col-xs-1"></div>
   </div>
   <div class="row">
-    <div class="col-sm-12 col-xs-10 top-marg">
+    <div class="col-sm-2 col-xs-0"></div>
+    <div class="col-sm-8 col-xs-10 top-marg">
       {{ embed(docs[0].roots.map_fig) | indent(10) }}
     </div>
+    <div class="col-sm-2 col-xs-0"></div>
   </div>
 </div>
 {{ plot_script | indent(8) }}
