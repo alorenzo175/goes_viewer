@@ -68,7 +68,7 @@ def create_bokeh_figure(
     base_height=800,
     image_alpha=0.8,
     base_url="http://localhost:3333/figs/",
-    title='GOES GeoColor Imagery at '
+    title="GOES GeoColor Imagery at ",
 ):
     img_args, x_range, y_range, scale = compute_image_locations_ranges(
         corners, lon_limits, lat_limits
@@ -102,9 +102,11 @@ def create_bokeh_figure(
         name="play_buttons",
         sizing_mode="scale_width",
     )
-    fig_source = ColumnDataSource(data=dict(url=[]), name='figsource', id='figsource')
+    fig_source = ColumnDataSource(data=dict(url=[]), name="figsource", id="figsource")
     adapter = CustomJS(
-        args=dict(slider=slider, fig_source=fig_source, base_url=base_url, title=map_fig.title),
+        args=dict(
+            slider=slider, fig_source=fig_source, base_url=base_url, title=map_fig.title
+        ),
         code="""
     const result = {url: []}
     const urls = cb_data.response
@@ -171,7 +173,7 @@ def create_bokeh_figure(
         var date = url.split('/').pop().split('_').pop().split('.')[0]
         title.text = base_title + date
         title.change.emit()
-        """
+        """,
     )
 
     play_callback = CustomJS(
@@ -216,14 +218,14 @@ def create_bokeh_figure(
     map_fig.image_url(
         url="url", global_alpha=image_alpha, source=fig_source, **img_args
     )
-    fig_source.js_on_change('tags', title_callback)
+    fig_source.js_on_change("tags", title_callback)
     map_fig.cross(x="x", y="y", size=12, fill_alpha=0.8, source=pt_source, color="red")
     slider.js_on_change("value", callback)
     play_buttons.js_on_change("active", play_callback)
     doc = curdoc()
     for thing in (map_fig, play_buttons, slider):
         doc.add_root(thing)
-    doc.title = 'GOES Image Viewer'
+    doc.title = "GOES Image Viewer"
     return doc
 
 
@@ -231,8 +233,9 @@ if __name__ == "__main__":
     doc = create_bokeh_figure(G16_CORNERS, [-116, -108], [31, 37], "")
     from jinja2 import Template
     from jinja2 import Environment, FileSystemLoader
-    env = Environment(loader=FileSystemLoader('goes_viewer/templates'))
-    template = env.get_template('index.html')
-    html = file_html(doc, CDN, 'TITLE', template)
-    with open('fig.html', 'w') as f:
+
+    env = Environment(loader=FileSystemLoader("goes_viewer/templates"))
+    template = env.get_template("index.html")
+    html = file_html(doc, CDN, "TITLE", template)
+    with open("fig.html", "w") as f:
         f.write(html)
