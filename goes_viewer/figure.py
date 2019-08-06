@@ -173,7 +173,7 @@ def create_bokeh_figure(
     )
 
     play_callback = CustomJS(
-        args=dict(slider=slider),
+        args=dict(slider=slider, play_speed=config.PLAY_SPEED),
         code="""
     function stop() {
         var id = cb_obj._id
@@ -191,7 +191,7 @@ def create_bokeh_figure(
     }
 
     function start() {
-        var id = setInterval(advance, 1000)
+        var id = setInterval(advance, play_speed)
         cb_obj._id = id
     }
 
