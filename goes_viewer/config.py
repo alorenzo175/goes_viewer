@@ -13,10 +13,7 @@ TILE_SOURCE = os.getenv(
 LON_LIMITS = [float(s) for s in os.getenv("GV_LON_LIMITS", "-116,-108").split(",")]
 LAT_LIMITS = [float(s) for s in os.getenv("GV_LAT_LIMITS", "31,37").split(",")]
 FILENAME = os.getenv("GV_FILE_NAME", "satellite_viewer.html")
-API_URL = os.getenv(
-    "GV_API_URL",
-    "https://forecasting.energy.arizona.edu/api/v2/public/metadata?db=irradsensors",
-)
+API_URL = os.getenv("GV_API_URL")
 API_USER = os.getenv("GV_API_USER")
 API_PASS = os.getenv("GV_API_PASSWORD")
 FILTERS = json.loads(os.getenv("GV_FILTERS", '{"Type": "ghi"}'))
