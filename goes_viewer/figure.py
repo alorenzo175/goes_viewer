@@ -1,7 +1,6 @@
 import os
 
 
-from bokeh import events
 from bokeh.plotting import figure
 from bokeh.models import (
     WMTSTileSource,
@@ -13,20 +12,21 @@ from bokeh.models import (
 )
 from bokeh.resources import CDN
 from bokeh.embed import file_html
-from bokeh.io import curdoc, save
-from bokeh.layouts import row, column
+from bokeh.io import curdoc
+from jinja2 import Environment, PackageLoader
 from pyproj import transform
 
 
-from goes_viewer.constants import WEB_MERCATOR, G16_CORNERS, G17_CORNERS, DX, DY
+from goes_viewer import config
+from goes_viewer.constants import WEB_MERCATOR, G17_CORNERS, DX, DY
 
 
 def compute_image_locations_ranges(corners, range_lon_limits, range_lat_limits):
     xn, yn = transform(
         WEB_MERCATOR.geodetic_crs,
         WEB_MERCATOR,
-        corners[:, 0],
-        corners[:, 1],
+        sorted(corners[:, 0]),
+        sorted(corners[:, 1]),
         always_xy=True,
     )
     x_range, y_range = transform(
@@ -47,10 +47,7 @@ def compute_image_locations_ranges(corners, range_lon_limits, range_lat_limits):
 # Need to use this and not bokeh.tile_providers.STAMEN_TONER
 # https://github.com/bokeh/bokeh/issues/4770
 STAMEN_TONER = WMTSTileSource(
-    url=(
-        os.getenv("TILE_SOURCE", "https://stamen-tiles.a.ssl.fastly.net/toner-lite")
-        + "/{Z}/{X}/{Y}.png"
-    ),
+    url=(config.TILE_SOURCE + "/{Z}/{X}/{Y}.png"),
     attribution=(
         'Map tiles by <a href="http://stamen.com">Stamen Design</a>, '
         'under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0'
@@ -64,10 +61,9 @@ def create_bokeh_figure(
     corners,
     lon_limits,
     lat_limits,
-    url,
+    base_url="figs/",
     base_height=800,
     image_alpha=0.8,
-    base_url="http://localhost:3333/figs/",
     title="GOES GeoColor Imagery at ",
 ):
     img_args, x_range, y_range, scale = compute_image_locations_ranges(
@@ -219,7 +215,9 @@ def create_bokeh_figure(
         url="url", global_alpha=image_alpha, source=fig_source, **img_args
     )
     fig_source.js_on_change("tags", title_callback)
-    map_fig.cross(x="x", y="y", size=12, fill_alpha=0.8, source=pt_source, color="red")
+    map_fig.cross(
+        x="x", y="y", size=12, fill_alpha=0.9, source=pt_source, color=config.RED
+    )
     slider.js_on_change("value", callback)
     play_buttons.js_on_change("active", play_callback)
     doc = curdoc()
@@ -229,12 +227,14 @@ def create_bokeh_figure(
     return doc
 
 
-if __name__ == "__main__":
-    doc = create_bokeh_figure(G16_CORNERS, [-116, -108], [31, 37], "")
-    from jinja2 import Environment, FileSystemLoader
-
-    env = Environment(loader=FileSystemLoader("goes_viewer/templates"))
+def render_html():
+    doc = create_bokeh_figure(G17_CORNERS, config.LON_LIMITS, config.LAT_LIMITS)
+    env = Environment(loader=PackageLoader("goes_viewer", "templates"))
     template = env.get_template("index.html")
-    html = file_html(doc, CDN, "TITLE", template)
-    with open("fig.html", "w") as f:
+    html = file_html(doc, CDN, "GOES Image Viewer", template)
+    with open(config.FILENAME, "w") as f:
         f.write(html)
+
+
+if __name__ == "__main__":
+    render_html()

@@ -1,8 +1,7 @@
 import numpy as np
 from pyproj import CRS
 
-S3_PREFIX = 'ABI-L2-MCMIPF'
-CONTRAST = 105
+
 G17_CORNERS = np.array(((-116, 38), (-102, 30)))
 G16_CORNERS = np.array(((-116, 30), (-102, 38)))
 WEB_MERCATOR = CRS.from_epsg("3857")

@@ -6,6 +6,7 @@ from pyproj import transform
 import requests
 
 
+from goes_viewer import config
 from goes_viewer.constants import WEB_MERCATOR, GEODETIC
 
 
@@ -22,23 +23,21 @@ def filter_func(filters, item):
 def parse_metadata(url, filters, auth=()):
     req = requests.get(url, auth=auth)
     req.raise_for_status()
-    out = set()
-    js = req.json()['Metadata']
+    out = {}
+    js = req.json()["Metadata"]
     filtered = filter(partial(filter_func, filters), js)
     for site in filtered:
-        pt = transform(GEODETIC, WEB_MERCATOR, site['Longitude'], site['Latitude'],
-                       always_xy=True)
-        out.add({'name': site['Name'], 'x': pt[0], 'y': pt[1]})
+        pt = transform(
+            GEODETIC, WEB_MERCATOR, site["Longitude"], site["Latitude"], always_xy=True
+        )
+        out[site["Name"]] = pt
 
-    return list(out)
+    return [{'name': k, 'x': v[0], 'y': v[1]} for k, v in out.items()]
 
 
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     out = parse_metadata(
-        'https://forecasting.energy.arizona.edu/api/v2/public/metadata?db=irradsensors',
-        {'Type': 'ghi'},
-        auth=())
-    with open('figs/metadata.json', 'w') as f:
+        config.API_URL, config.FILTERS, auth=(config.API_USER, config.API_PASS)
+    )
+    with open(config.BASE_DIR / "metadata.json", "w") as f:
         json.dump(out, f)
