@@ -231,7 +231,6 @@ def create_bokeh_figure(
 
 if __name__ == "__main__":
     doc = create_bokeh_figure(G16_CORNERS, [-116, -108], [31, 37], "")
-    from jinja2 import Template
     from jinja2 import Environment, FileSystemLoader
 
     env = Environment(loader=FileSystemLoader("goes_viewer/templates"))

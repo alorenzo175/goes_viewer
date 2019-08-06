@@ -22,13 +22,13 @@
         case "ArrowLeft":
             var ds = Bokeh.documents[0].get_model_by_name('timeslider');
             if (ds.value > ds.start){
-                ds.value -= ds.step;
+                ds.value -= 1;
             };
             break;
         case "ArrowRight":
             var ds = Bokeh.documents[0].get_model_by_name('timeslider');
             if (ds.value < ds.end){
-                ds.value += ds.step;
+                ds.value += 1;
             };
             break;
         default:
